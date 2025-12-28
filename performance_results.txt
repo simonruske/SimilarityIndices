@@ -1,0 +1,3 @@
+Similarity average time: 0.00047445900005186557
+Sklearn average time: 0.03181003700065048
+FCluster average time: 0.01772177200020451
