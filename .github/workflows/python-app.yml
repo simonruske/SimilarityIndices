@@ -43,4 +43,4 @@ jobs:
       if: always()
       with:
         name: performance-results
-        path: tmp*.txt
+        path: performance_results.txt

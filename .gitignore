@@ -138,4 +138,4 @@ dmypy.json
 cython_debug/
 
 # Temporary performance test results
-*.txt
+*perforamce_results.txt

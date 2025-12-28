@@ -5,8 +5,6 @@ from time import perf_counter
 from library.similarity import similarity_metrics
 from scipy.cluster.hierarchy import fcluster
 from sklearn.metrics import adjusted_rand_score
-import tempfile
-import os
 
 
 class Performance(unittest.TestCase):
@@ -42,7 +40,8 @@ class Performance(unittest.TestCase):
             sklearn_time = 0
             fcluster_time = 0
 
-            included_results = 0
+            actual_excluded_results = 0
+            actual_included_results = 0
             for i in range(n - 1, 1, -1):
 
                 start = perf_counter()
@@ -63,15 +62,16 @@ class Performance(unittest.TestCase):
                 sklearn_time += end - start
 
                 # fcluster takes maxclust rather than an exact number of clusters
-                # most of the time it will create exactly maxclust, but for the occassions
+                # most of the time it will create exactly maxclust, but for the occasions
                 # that it doesn't the results are are not comparable so ignore them
                 if (len(np.unique(fcluster_a)) != i) or (
                     len(np.unique(fcluster_b)) != i
                 ):
+                    actual_excluded_results += 1
                     ar_sklearn.append(ar_similarity[len(ar_sklearn)])
 
                 else:
-                    included_results += 1
+                    actual_included_results += 1
                     ar_sklearn.append(ar)
 
             sklearn_times.append(sklearn_time)
@@ -82,17 +82,32 @@ class Performance(unittest.TestCase):
             # Assert
             self.assertEqual(len(ar_sklearn), len(ar_similarity))
             np.testing.assert_almost_equal(ar_similarity, ar_sklearn)
-            self.assertTrue(included_results > 0)
+
+            # The number of excluded results should remain constant
+            # barring changes to fcluster implementation.
+            expected_number_of_excluded_results = 3
+            self.assertEqual(
+                expected_number_of_excluded_results, actual_excluded_results
+            )
+            self.assertEqual(
+                n - 2 - expected_number_of_excluded_results, actual_included_results
+            )
 
         # Write results to a temporary file
-        with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, suffix=".txt", dir=os.getcwd()
+        average_similarity_time = np.average(similarity_times)
+        average_sklearn_time = np.average(sklearn_times)
+
+        with open(
+            "performance_results.txt",
+            mode="w",
         ) as temp_file:
-            temp_file.write(
-                f"Similarity average time: {np.average(similarity_times)}\n"
-            )
-            temp_file.write(f"Sklearn average time: {np.average(sklearn_times)}\n")
+            temp_file.write(f"Similarity average time: {average_similarity_time}\n")
+            temp_file.write(f"Sklearn average time: {average_sklearn_time}\n")
             temp_file.write(f"FCluster average time: {np.average(fcluster_times)}\n")
+
+        assert (
+            average_similarity_time * 10 < average_sklearn_time
+        )  # The performance should be at least 10x better
 
 
 if __name__ == "__main__":
