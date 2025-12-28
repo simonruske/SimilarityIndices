@@ -107,7 +107,7 @@ class similarity_metrics:
 
         With the exception of the Adjusted Rand each of the indices are defined on
         the interval :math:`[0,1]` where values close to 1 indicate strong
-        similarity and values close to 0 indicate lack of similairity. The same is
+        similarity and values close to 0 indicate lack of similarity. The same is
         true for the Adjusted Rand index except it is possible that the index can
         take on values in the interval :math:`[-1,0)` when the value of the Rand
         index is less than it's expected value.
