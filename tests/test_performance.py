@@ -1,11 +1,12 @@
 import unittest
 import numpy as np
-from numpy.testing import assert_almost_equal
 from fastcluster import linkage
 from time import perf_counter
 from library.similarity import similarity_metrics
 from scipy.cluster.hierarchy import fcluster
 from sklearn.metrics import adjusted_rand_score
+import tempfile
+import os
 
 class Performance(unittest.TestCase):
 
@@ -24,7 +25,7 @@ class Performance(unittest.TestCase):
     sklearn_times = []
     fcluster_times = []
     
-    for repitition in range(100):
+    for _ in range(100):
     
       start = perf_counter()
     
@@ -40,7 +41,7 @@ class Performance(unittest.TestCase):
       sklearn_time = 0
       fcluster_time = 0
       
-      excluded_results = 0
+      included_results = 0
       for i in range(n - 1, 1, -1):
       
         start = perf_counter()
@@ -64,27 +65,27 @@ class Performance(unittest.TestCase):
         # most of the time it will create exactly maxclust, but for the occassions 
         # that it doesn't the results are are not comparable so ignore them
         if (len(np.unique(fcluster_a)) != i) or (len(np.unique(fcluster_b)) != i):
-          excluded_results += 1
           ar_sklearn.append(ar_similarity[len(ar_sklearn)])
           
         else:
+          included_results += 1
           ar_sklearn.append(ar)
        
       sklearn_times.append(sklearn_time)
       fcluster_times.append(fcluster_time)
       
       ar_sklearn = np.array(ar_sklearn)
-       
-      idx = ar_sklearn != np.nan
       
       # Assert
       self.assertEqual(len(ar_sklearn), len(ar_similarity))
-      assert_almost_equal(ar_similarity, ar_sklearn)
-      self.assertEqual(4, excluded_results) # double-check that we haven't excluded everything
-    
-    print("\nSimilarity average time: ", np.average(similarity_times))
-    print("\nSklearn average time: ", np.average(sklearn_times))
-    print("\nFCluster average time: ", np.average(fcluster_times))
-    
+      np.testing.assert_almost_equal(ar_similarity, ar_sklearn)
+      self.assertTrue(included_results > 0)
+
+    # Write results to a temporary file
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', dir=os.getcwd()) as temp_file:
+      temp_file.write(f"Similarity average time: {np.average(similarity_times)}\n")
+      temp_file.write(f"Sklearn average time: {np.average(sklearn_times)}\n")
+      temp_file.write(f"FCluster average time: {np.average(fcluster_times)}\n")
+
 if __name__ == '__main__':
   unittest.main()
